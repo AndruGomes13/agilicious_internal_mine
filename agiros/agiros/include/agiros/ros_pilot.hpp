@@ -103,6 +103,7 @@ class RosPilot {
   ros::Subscriber guard_sub_;
 
   ros::Publisher state_pub_;
+  ros::Publisher state_pose_pub_;
   ros::Publisher state_odometry_pub_;
   ros::Publisher telemetry_pub_;
   ros::Publisher cmd_pub_;

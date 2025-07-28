@@ -14,6 +14,7 @@
 #include "agiros_msgs/DebugMsg.h"
 #include "agiros_msgs/QuadState.h"
 #include "agiros_msgs/Telemetry.h"
+#include "geometry_msgs/Pose.h"
 #include "nav_msgs/Odometry.h"
 #include "std_msgs/Float32.h"
 
@@ -110,6 +111,7 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
 
   // Publishers
   state_pub_ = pnh_.advertise<agiros_msgs::QuadState>("state", 1);
+  state_pose_pub_ = pnh_.advertise<geometry_msgs::Pose>("state/pose", 1);
   state_odometry_pub_ = pnh_.advertise<nav_msgs::Odometry>("odometry", 1);
   telemetry_pub_ = pnh_.advertise<agiros_msgs::Telemetry>("telemetry", 1);
   cmd_pub_ = pnh_.advertise<agiros_msgs::Command>("mpc_command", 1);
@@ -360,6 +362,7 @@ void RosPilot::pipelineCallback(const QuadState& state,
   cmd_pub_.publish(toRosCommand(command));
   state_odometry_pub_.publish(msg_odo);
   state_pub_.publish(msg);
+  state_pose_pub_.publish(msg.pose);
 
   agiros_msgs::Telemetry telemetry_msg;
   telemetry_msg.t = state.t;
