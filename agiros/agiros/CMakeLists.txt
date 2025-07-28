@@ -95,6 +95,10 @@ target_link_libraries(agisim_node
         ros_pilot
         )
   
+# ROS to SBUS bridge example
+cs_add_executable(ros_to_sbus_bridge src/ros_to_sbus_bridge.cpp)
+target_link_libraries(ros_to_sbus_bridge ros_pilot)
+
 # ROS to Laird bridge example
 cs_add_executable(ros_to_laird_bridge src/ros_to_laird_bridge.cpp)
 target_link_libraries(ros_to_laird_bridge ros_pilot)

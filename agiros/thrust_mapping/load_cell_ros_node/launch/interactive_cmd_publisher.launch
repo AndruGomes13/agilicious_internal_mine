@@ -1,0 +1,10 @@
+<launch>
+    <node pkg="load_cell_ros_node" type="interactive_cmd_publisher.py"
+          name="interactive_cmd_publisher" output="screen">
+        <param name="min_cmd" value="0"/>
+        <param name="max_cmd" value="40"/>
+        <param name="inc_step" value="1"/>
+        <param name="rate_step" value="0.05"/>
+
+    </node>
+</launch>
