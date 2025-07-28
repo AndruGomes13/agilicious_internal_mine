@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="quad_name"/>
+    <arg name="rviz" default="false"/>
+
+    <!-- GUI -->
+    <node name="agiros_gui" pkg="rqt_gui" type="rqt_gui"
+          args="-s agiros_gui.basic_flight.BasicFlight --args
+        --quad_name $(arg quad_name)" output="screen"/>
+
+     <!-- <node pkg="motion_capture_ros" type="motion_capture_node" name="motion_capture_node">
+       <param name="hostname" value="localhost"/>
+       <param name="type" value="vicon"/>
+       <param name="quad_name" value="$(arg quad_name)"/>
+     </node> -->
+
+    <!-- Visualization -->
+    <group if="$(arg rviz)">
+        <node pkg="rviz" type="rviz" name="viz_face" args="-d $(find motion_capture_ros)/resources/arena.rviz"
+              ns="$(arg quad_name)">
+        </node>
+    </group>
+</launch>
