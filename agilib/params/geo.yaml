@@ -4,7 +4,7 @@ kpacc:                        [10.0,  10.0, 10.0]
 kdacc:                        [ 6.0,   6.0,  6.0]
 
 kpatt_z:                      3
-kpatt_xy:                     150
+kpatt_xy:                     15
 kprate:                       [20.0,  20.0,      8]
 
 filter_sampling_frequency:     300   # filter frequency, same as control frequency (Hz)
