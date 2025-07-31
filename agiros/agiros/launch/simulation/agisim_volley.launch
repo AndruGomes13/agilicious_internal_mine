@@ -21,7 +21,7 @@
 
     <!-- GUI -->
     <node name="agiros_gui" pkg="rqt_gui" type="rqt_gui"
-          args="-s agiros_gui.basic_flight.BasicFlight --args --quad_name $(arg quad_name)" output="screen"/>
+          args="-s agiros_gui.basic_flight_volley.BasicFlight --args --quad_name $(arg quad_name)" output="screen"/>
 
     <!-- Gamepad and RC Utility -->
     <group if="$(arg use_joystick)">

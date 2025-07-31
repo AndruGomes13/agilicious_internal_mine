@@ -22,5 +22,22 @@
     </qtgui>
 
   </class>
+  <!-- New plugin -->
+  <class name="agiros_gui_basic_volley"
+         type="agiros_gui.basic_flight_volley.BasicFlight"
+         base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Plugin for volley drone flight panel.
+    </description>
+    <qtgui>
+      <group>
+        <label>rpg</label>
+        <icon type="theme">folder</icon>
+      </group>
+      <label>Agilicious Volley Flight Gui</label>
+      <icon type="theme">applications-other</icon>
+    </qtgui>
+  </class>
+
 
 </library>
