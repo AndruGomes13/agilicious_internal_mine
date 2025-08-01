@@ -190,7 +190,8 @@ class PilotWidget(QWidget):
         if msg.data is not None and msg.data is not False and msg.data is not True: 
             # Invalid data, set to None
             msg.data = None
-        
+
+        self.last_policy_status = rospy.Time.now()
         update_needed = self._policy_status != msg.data
         if update_needed:
             self._policy_status = msg.data
@@ -211,8 +212,6 @@ class PilotWidget(QWidget):
                 w.setStyleSheet(
                     "background: red; color: white; "
                     "border: 1px solid black; border-radius: 4px;")
-            
-            self.last_policy_status= rospy.Time.now()
             
             
             w.style().unpolish(w)                        
@@ -469,17 +468,17 @@ class PilotWidget(QWidget):
 
     @Slot(bool)
     def on_button_start_policy_clicked(self):
-        print("Start policy button clicked!")
         self._run_policy_pub.publish(std_msgs.Bool(True))
         
     @Slot(bool)
     def on_button_stop_policy_clicked(self):
-        print("Stop policy button clicked!")
         self._run_policy_pub.publish(std_msgs.Bool(False))
 
-    def status_watchdog(self):
-        if (rospy.Time.now() - self.last_policy_status) < rospy.Duration.from_sec(0.3):
-            self.on_policy_status_cb(None)
+    def status_watchdog(self, event):
+        if (rospy.Time.now() - self.last_policy_status) > rospy.Duration.from_sec(1.0):
+            msg = std_msgs.Bool()
+            msg.data = None
+            self.on_policy_status_cb(msg)
             
 
 
