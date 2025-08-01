@@ -40,7 +40,7 @@ class PilotWidget(QWidget):
         self._traj_filename = None
 
         # publishers for the logic
-        self._start_policy_pub = None
+        self._run_policy_pub = None
         self._stop_policy_pub = None
         self._policy_status_sub = None
         self._policy_status = None
@@ -88,11 +88,9 @@ class PilotWidget(QWidget):
         self._quad_namespace = quad_namespace
 
         self._policy_status_sub = rospy.Subscriber(
-            quad_namespace + '/policy_status', std_msgs.Bool, self.on_policy_status_cb)
-        self._start_policy_pub = rospy.Publisher(
-            quad_namespace + '/start_policy', std_msgs.Empty, queue_size=1)
-        self._stop_policy_pub = rospy.Publisher(
-            quad_namespace + '/stop_policy', std_msgs.Empty, queue_size=1)
+            quad_namespace+ '/policy_status', std_msgs.Bool, self.on_policy_status_cb)
+        self._run_policy_pub = rospy.Publisher(
+            quad_namespace+ '/run_policy', std_msgs.Bool, queue_size=1)
 
         self._arm_bridge_pub = rospy.Publisher(
             quad_namespace + '/agiros_pilot/enable', std_msgs.Bool, queue_size=1)
@@ -159,8 +157,7 @@ class PilotWidget(QWidget):
         self.disconnect_pub_sub(self._go_to_pose_pub)
 
         self.disconnect_pub_sub(self._policy_status_sub)
-        self.disconnect_pub_sub(self._start_policy_pub)
-        self.disconnect_pub_sub(self._stop_policy_pub)
+        self.disconnect_pub_sub(self._run_policy_pub)
         self.button_start_policy.setEnabled(False)
         self.button_stop_policy.setEnabled(False)
         
@@ -470,12 +467,12 @@ class PilotWidget(QWidget):
     @Slot(bool)
     def on_button_start_policy_clicked(self):
         print("Start policy button clicked!")
-        self._start_policy_pub.publish(std_msgs.Empty())
+        self._run_policy_pub.publish(std_msgs.Bool(True))
         
     @Slot(bool)
     def on_button_stop_policy_clicked(self):
         print("Stop policy button clicked!")
-        self._stop_policy_pub.publish(std_msgs.Empty())
+        self._run_policy_pub.publish(std_msgs.Bool(False))
 
     
 
