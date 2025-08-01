@@ -16,7 +16,7 @@
 
     <!-- Visualization -->
     <group if="$(arg rviz)">
-        <node pkg="rviz" type="rviz" name="viz_face" args="-d $(find agiros_gui)/resources/arena.rviz"
+        <node pkg="rviz" type="rviz" name="viz_face" args="-d $(find agiros_gui)/resource/arena.rviz"
               ns="$(arg quad_name)">
         </node>
     </group>
