@@ -41,9 +41,10 @@ class PilotWidget(QWidget):
 
         # publishers for the logic
         self._run_policy_pub = None
-        self._stop_policy_pub = None
         self._policy_status_sub = None
         self._policy_status = None
+        self.last_policy_status = rospy.Time(0)
+        rospy.Timer(rospy.Duration.from_sec(0.2), self.status_watchdog)
         
         self._arm_bridge_pub = None
         self._start_pub = None
@@ -194,7 +195,7 @@ class PilotWidget(QWidget):
         if update_needed:
             self._policy_status = msg.data
             if self._policy_status is None:
-                w.setText("UNKNOWN")
+                w.setText("NO STATUS")
                 w.setStyleSheet(
                     "background: gray; color: white; "
                     "border: 1px solid black; border-radius: 4px;")
@@ -211,9 +212,11 @@ class PilotWidget(QWidget):
                     "background: red; color: white; "
                     "border: 1px solid black; border-radius: 4px;")
             
+            self.last_policy_status= rospy.Time.now()
+            
+            
             w.style().unpolish(w)                        
             w.style().polish(w)
-
 
     def update_gui(self):
         if self._connected:
@@ -474,7 +477,10 @@ class PilotWidget(QWidget):
         print("Stop policy button clicked!")
         self._run_policy_pub.publish(std_msgs.Bool(False))
 
-    
+    def status_watchdog(self):
+        if (rospy.Time.now() - self.last_policy_status) < rospy.Duration.from_sec(0.3):
+            self.on_policy_status_cb(None)
+            
 
 
     def load_trajectory_from_csv(self, filename):
