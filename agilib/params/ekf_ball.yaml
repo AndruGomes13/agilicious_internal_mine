@@ -1,0 +1,12 @@
+
+
+enable_timing:                          true
+update_on_get:                          true
+max_unseen_wait_time:                   0.1
+jump_pos_threshold:                     0.5
+jump_att_threshold:                     0.7
+R_pos:                                  1.0e-4
+Q_pos:                                  1.0e-3
+Q_vel:                                  1.0e+1
+Q_init_pos:                             1.0e-4
+Q_init_vel:                             1.0e+3

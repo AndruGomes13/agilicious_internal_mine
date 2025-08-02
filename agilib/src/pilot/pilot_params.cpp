@@ -167,6 +167,8 @@ try {
         throw ParameterException();
       estimator = std::make_shared<EkfBall>(ball_, params);
       return true;
+    } else {
+      logger_.warn("Could not create ball estimator of type '%s'!", config.type.c_str());
     }
   } catch (const ParameterException& e) {
     throw ParameterException("Could not load ball estimator " + config.type +

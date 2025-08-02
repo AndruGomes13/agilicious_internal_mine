@@ -25,10 +25,10 @@ struct BallState {
     SIZE = 6
   };
 
-  Scalar t{0.0};
+  Scalar t{NAN};
   bool seen_last_frame {false};
-  Scalar last_seen_t {0.0};
-  Vector<IDX::SIZE> x{Vector<IDX::SIZE>::Zero()};
+  Scalar last_seen_t {NAN};
+  Vector<IDX::SIZE> x{Vector<IDX::SIZE>::Constant(NAN)};
 
   BallState() = default;
   BallState(const Scalar t, const Vector<IDX::SIZE>& x) : t(t), x(x) {}

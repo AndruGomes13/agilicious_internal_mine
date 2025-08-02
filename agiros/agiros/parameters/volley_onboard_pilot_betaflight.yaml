@@ -3,6 +3,10 @@ pipeline:
     type:               "EKF"
     file:               "ekf_full_no_imu.yaml"
 
+  estimator_ball:
+    type:               "EKF_Ball"
+    file:               "ekf_ball.yaml"
+
   sampler:
     type:               "Time"
 

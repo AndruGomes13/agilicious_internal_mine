@@ -92,6 +92,8 @@ inline agiros_msgs::QuadState toRosQuadState(const agi::QuadState& state) {
 inline agiros_msgs::BallState toRosBallState(const agi::BallState& state) {
   agiros_msgs::BallState msg;
   msg.t = state.t;
+  msg.seen_last_frame = state.seen_last_frame;
+  msg.last_seen_time = state.last_seen_t;
   msg.position = toRosVector(state.p);
   msg.linear_velocity = toRosVector(state.v);
   return msg;

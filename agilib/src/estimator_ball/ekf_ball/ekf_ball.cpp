@@ -23,6 +23,7 @@ bool EkfBall::getAt(const Scalar t, BallState* const state) {
   if (!posterior_.valid()) return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
+  logger_.info("Processing.");
   if (params_->update_on_get) process();
 
   // Catch trivial cases...
@@ -32,6 +33,7 @@ bool EkfBall::getAt(const Scalar t, BallState* const state) {
     // return false;  // Not allowed to get prior state. This is because the prior is not updated with empty frames and thus can be outdated.
   }
 
+  logger_.info("Propagating prior.");
   const bool ret = propagatePrior(t);
   *state = prior_;
   state->seen_last_frame = last_processed_frame_had_pose;
@@ -70,6 +72,7 @@ bool EkfBall::addFrame(const Frame& frame) {
       // If the filter is not initialized, no need to add a frame without a pose.
       return true;
     }
+    logger_.info("Adding empty frame at time %1.3f", frame.t);
     frames_.push_back(frame);
   }else{
     Pose pose = frame.pose.value();
@@ -99,6 +102,7 @@ bool EkfBall::addFrame(const Frame& frame) {
 
 bool EkfBall::addPointCloud(const PointCloud& point_cloud) {
     int num_points = point_cloud.size();
+    logger_.info("Received PointCloud with %d points at time %1.3f", num_points, point_cloud.t);
 
     if (num_points == 0) {
         logger_.warn("Received empty point cloud, skipping.");
@@ -250,6 +254,10 @@ bool EkfBall::propagatePrior(const Scalar t) {
 
   const BallState initial = prior_;
   prior_.t = t;
+  logger_.info("Integrating dt: %1.3f", prior_.t - initial.t);
+  logger_.info("Prior t: %1.3f", prior_.t);
+  logger_.info("Initial t: %1.3f", initial.t);
+
   integrator_.integrate(initial, &prior_);
   sanitize(prior_);
 

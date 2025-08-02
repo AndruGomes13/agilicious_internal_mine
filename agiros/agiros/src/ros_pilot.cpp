@@ -153,6 +153,7 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
 RosPilot::~RosPilot() { shutdown_ = true; }
 
 void RosPilot::runPipeline(const ros::TimerEvent& event) {
+  logger_.info("-- Runnig pipeline");
   pilot_.runPipeline(event.current_real.toSec());
 }
 
