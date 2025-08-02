@@ -5,6 +5,7 @@
 #include "agilib/types/quad_state.hpp"
 #include "agilib/types/ball_state.hpp"
 #include "agilib/types/pose.hpp"
+#include "agilib/types/point.hpp"
 #include "agilib/types/point_cloud.hpp"
 #include "agiros_msgs/Command.h"
 #include "agiros_msgs/QuadState.h"
@@ -151,12 +152,11 @@ inline bool fromRosThrusts(const T& ros_thrusts, Vector<4>* const agi_thrusts) {
 inline PointCloud fromRosPointCloud(const motion_capture_ros_msgs::PointCloud& ros_point_cloud) {
   PointCloud point_cloud;
   point_cloud.t = ros_point_cloud.t;
-  for (const auto& pose_msg : ros_point_cloud.poses) {
-    Pose pose;
-    pose.t = pose_msg.header.stamp.toSec();
-    pose.position = fromRosVec3(pose_msg.pose.position);
-    pose.attitude = fromRosQuaternion(pose_msg.pose.orientation);
-    point_cloud.poses.push_back(pose);
+  for (const auto& point_msg : ros_point_cloud.points) {
+    Point point;
+    point.t = point_msg.header.stamp.toSec();
+    point.position = fromRosVec3(point_msg.point);
+    point_cloud.points.push_back(point);
   }
 
   return point_cloud;

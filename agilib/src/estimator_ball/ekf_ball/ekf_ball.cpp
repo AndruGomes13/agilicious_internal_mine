@@ -23,7 +23,6 @@ bool EkfBall::getAt(const Scalar t, BallState* const state) {
   if (!posterior_.valid()) return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  logger_.info("Processing.");
   if (params_->update_on_get) process();
 
   // Catch trivial cases...
@@ -33,11 +32,10 @@ bool EkfBall::getAt(const Scalar t, BallState* const state) {
     // return false;  // Not allowed to get prior state. This is because the prior is not updated with empty frames and thus can be outdated.
   }
 
-  logger_.info("Propagating prior.");
   const bool ret = propagatePrior(t);
   *state = prior_;
-  state->seen_last_frame = last_processed_frame_had_pose;
-  state->last_seen_t = t_last_processed_frame_with_pose;
+  state->seen_last_frame = last_processed_frame_had_point;
+  state->last_seen_t = t_last_processed_frame_with_point;
 
   return ret;
 }
@@ -67,30 +65,33 @@ bool EkfBall::init(const BallState& state) {
 
 
 bool EkfBall::addFrame(const Frame& frame) {
-  if (!frame.pose.has_value()){
+  if (!frame.point.has_value()){
     if (!posterior_.valid()) {
-      // If the filter is not initialized, no need to add a frame without a pose.
+      // If the filter is not initialized, no need to add a frame without a point.
       return true;
     }
-    logger_.info("Adding empty frame at time %1.3f", frame.t);
     frames_.push_back(frame);
   }else{
-    Pose pose = frame.pose.value();
-    if (!pose.valid()) return false;
+    Point point = frame.point.value();
+    if (!point.valid()) return false;
 
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!posterior_.valid()) {
+      logger_.info("Posterior is not valid, initializing with point.");
       posterior_.setZero();
-      posterior_.t = pose.t;
-      posterior_.p = pose.position;
+      posterior_.t = point.t;
+      posterior_.seen_last_frame = true;
+      posterior_.last_seen_t = point.t;
+      posterior_.p = point.position;
+      t_last_processed_frame_with_point = point.t;
       return init(posterior_);
     }
 
-    if (pose.t <= posterior_.t) return false;
+    if (point.t <= posterior_.t) return false;
 
     frames_.push_back(frame);
-    t_last_pose_ = pose.t;
+    t_last_point = point.t;
   }
 
   while ((int)frames_.size() > MAX_QUEUE_SIZE) frames_.pop_front();
@@ -102,36 +103,35 @@ bool EkfBall::addFrame(const Frame& frame) {
 
 bool EkfBall::addPointCloud(const PointCloud& point_cloud) {
     int num_points = point_cloud.size();
-    logger_.info("Received PointCloud with %d points at time %1.3f", num_points, point_cloud.t);
 
     if (num_points == 0) {
         logger_.warn("Received empty point cloud, skipping.");
         addFrame(Frame{
             .t = point_cloud.t,
-            .pose = std::nullopt,  // No pose update
+            .point = std::nullopt,  // No point update
         });
     } else if (num_points == 1) {
-        // If we have only one point, we can use it as a pose update.
-        Pose pose = point_cloud.poses[0];
-        pose.t = point_cloud.t;
+        // If we have only one point, we can use it as a point update.
+        Point point = point_cloud.points[0];
+        point.t = point_cloud.t;
         addFrame(Frame{
-            .t = pose.t,
-            .pose = pose,
+            .t = point.t,
+            .point = point,
         });
     } else {
         // If we have multiple points, we can use the one closest to the prior.
-        Pose closest_pose = point_cloud.poses[0];
-        Scalar min_distance = (closest_pose.position - prior_.p).norm();
-        for (const auto& p : point_cloud.poses) {
+        Point closest_point = point_cloud.points[0];
+        Scalar min_distance = (closest_point.position - prior_.p).norm();
+        for (const auto& p : point_cloud.points) {
             Scalar distance = (p.position - prior_.p).norm();
             if (distance < min_distance) {
                 min_distance = distance;
-                closest_pose = p;
+                closest_point = p;
             }
         }
         addFrame(Frame{
-            .t = closest_pose.t,
-            .pose = closest_pose,
+            .t = closest_point.t,
+            .point = closest_point,
         });
     }
     return true;
@@ -150,7 +150,7 @@ void EkfBall::logTiming() const {
 void EkfBall::printTimings(const bool all) const {
   logger_ << timer_process_;
   if (all) {
-    logger_ << timer_update_pose_;
+    logger_ << timer_update_point_;
     logger_ << timer_compute_gain_;
     logger_ << timer_propagation_;
     logger_ << timer_jacobian_;
@@ -163,17 +163,17 @@ bool EkfBall::process() {
 
   while (frame < frames_.end()) {  // Iterator over all frames in queue
 
-    if (!frame->pose.has_value()){
+    if (!frame->point.has_value()){
         // If it's an empty frame.
-        last_processed_frame_had_pose = false;
+        last_processed_frame_had_point = false;
         
       } else {
-      Pose pose = frame->pose.value();
-        if (!updatePose(pose)){
-            logger_.error("Could not perform pose update at %1.3f",
-                        pose.t);
+      Point point = frame->point.value();
+        if (!updatePoint(point)){
+            logger_.error("Could not perform point update at %1.3f",
+                        point.t);
                         }
-        last_processed_frame_had_pose = true;
+        last_processed_frame_had_point = true;
       }
       // Pedantic: exit if queues have been emptied in possible filter re-init.
       if (frames_.empty()) {return true;}
@@ -188,57 +188,62 @@ bool EkfBall::process() {
   return true;
 }
 
-bool EkfBall::updatePose(const Pose& pose) {
-  if (params_->enable_timing) timer_update_pose_.tic();
-  if (!propagatePriorAndJacobian(pose.t)) {
-    logger_.error("Could not propagate to %1.3f", pose.t);
+bool EkfBall::updatePoint(const Point& point) {
+  if (params_->enable_timing) timer_update_point_.tic();
+  if (!propagatePriorAndJacobian(point.t)) {
+    logger_.error("Could not propagate to %1.3f", point.t);
     return false;
   }
 
   if (params_->jump_pos_threshold > 0.0) {
-    const Vector<3> d_pos = pose.position - prior_.p;
-    const bool pos_jump = params_->jump_pos_threshold > 0.0 &&
-                          d_pos.norm() > params_->jump_pos_threshold;
+    const Vector<3> d_pos = point.position - prior_.p;
+    const bool pos_jump = d_pos.norm() > params_->jump_pos_threshold;
 
     if (pos_jump) {
       logger_.warn(
-        "Detected jump in pose measurement!\n"
+        "Detected jump in point measurement!\n"
         "Time: %1.3f\n"
         "Position:  %1.1f m\n"
         "Angle:     %1.1f rad\n",
-        pose.t, d_pos.norm());
+        point.t, d_pos.norm());
       if (pos_jump) {
         logger_ << "Prior Pos: " << prior_.p.transpose() << std::endl;
-        logger_ << "Meas Pos:  " << pose.position.transpose() << std::endl;
+        logger_ << "Meas Pos:  " << point.position.transpose() << std::endl;
       }
 
       posterior_.setZero();
-      posterior_.t = pose.t;
-      posterior_.p = pose.position;
+      posterior_.t = point.t;
+      posterior_.p = point.position;
+      posterior_.seen_last_frame = true;
+      posterior_.last_seen_t = point.t;
+      t_last_processed_frame_with_point = point.t;
       return init(posterior_);
     }
   }
 
-  if (pose.t - t_last_processed_frame_with_pose > params_->max_unseen_wait_time) {
-    // The last seen pose was too long ago, reset the filter.
-    logger_.warn("Pose update at %1.3f is too old, resetting filter.", pose.t);
+  if (point.t - t_last_processed_frame_with_point > params_->max_unseen_wait_time) {
+    // The last seen point was too long ago, reset the filter.
+    logger_.warn("Point update at %1.3f is too old, resetting filter.", point.t);
     posterior_.setZero();
-    posterior_.t = pose.t;
-    posterior_.p = pose.position;
+    posterior_.t = point.t;
+    posterior_.p = point.position;
+    posterior_.seen_last_frame = true;
+    posterior_.last_seen_t = point.t;
+    t_last_processed_frame_with_point = point.t;
     return init(posterior_);
   }
 
-  // Pose update residual and jacobian.
-  const Vector<SRPOS> y = prior_.p - pose.position;   // done
+  // Point update residual and jacobian.
+  const Vector<SRPOS> y = prior_.p - point.position;   // done
 
   Matrix<SRPOS, BallState::SIZE> H = Matrix<SRPOS, BallState::SIZE>::Zero();
   H.block<3, 3>(0, BallState::IDX::POS) = Matrix<3, 3>::Identity();
 
-  const bool check = update(y, H, R_pose_);
-  posterior_.last_seen_t = pose.t;
+  const bool check = update(y, H, R_pos_);
+  posterior_.last_seen_t = point.t;
   posterior_.seen_last_frame = true;
-  t_last_processed_frame_with_pose = pose.t;
-  if (params_->enable_timing) timer_update_pose_.toc();
+  t_last_processed_frame_with_point = point.t;
+  if (params_->enable_timing) timer_update_point_.toc();
   return check;
 }
 
@@ -318,7 +323,7 @@ bool EkfBall::updateParameters(const std::shared_ptr<EkfParametersBall>& params)
 
   Q_.setZero();
   Q_init_.setZero();
-  R_pose_.setZero();
+  R_pos_.setZero();
  
   // Process noise
   const Vector<> q = (Vector<BallState::SIZE>() << params_->Q_pos, params_->Q_vel).finished();
@@ -334,7 +339,7 @@ bool EkfBall::updateParameters(const std::shared_ptr<EkfParametersBall>& params)
   Q_init.topLeftCorner(q_init.rows(), q_init.rows()) = q_init.asDiagonal();
   Q_init_ = Q_init.sparseView();
 
-  R_pose_ = (Vector<SRPOS>() << params_->R_pos)
+  R_pos_ = (Vector<SRPOS>() << params_->R_pos)
               .finished()
               .asDiagonal();
 

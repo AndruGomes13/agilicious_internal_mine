@@ -76,7 +76,7 @@ bool Pipeline::run(const Scalar t) {
 
     initialized_ |= ball_estimator_successful;
     if (initialized_ && !ball_estimator_successful) {
-      logger_.error("Estimator failed!");
+      logger_.error("Ball stimator failed!");
       return false;
     }
   }

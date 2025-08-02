@@ -9,6 +9,7 @@
 #include "agilib/math/math.hpp"
 #include "agilib/math/types.hpp"
 #include "agilib/types/pose.hpp"
+#include "agilib/types/point.hpp"
 #include "agilib/types/ball_state.hpp"
 #include "agilib/types/ball.hpp"
 #include "agilib/utils/logger.hpp"
@@ -17,7 +18,7 @@
 namespace agi {
   
 
-/// EKF filter for pose measurements.
+/// EKF filter for point measurements.
 class EkfBall : public EstimatorBaseBall {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -31,7 +32,6 @@ class EkfBall : public EstimatorBaseBall {
 
   bool addFrame(const Frame& frame);
   bool addPointCloud(const PointCloud& point_cloud) override;
-  // bool addState(const BallState& pose) override;
 
   bool updateParameters(const std::shared_ptr<EkfParametersBall>& params);
 
@@ -47,7 +47,7 @@ class EkfBall : public EstimatorBaseBall {
   template<int N>
   bool update(const Vector<N>& y, const Matrix<N, BallState::SIZE>& H,
               const Matrix<N, N>& R);
-  bool updatePose(const Pose& pose);
+  bool updatePoint(const Point& point);
   bool propagatePrior(const Scalar time);
   bool propagatePriorAndJacobian(const Scalar time);
   void sanitize(BallState& state);
@@ -59,7 +59,7 @@ class EkfBall : public EstimatorBaseBall {
   std::shared_ptr<EkfParametersBall> params_;
   SparseMatrix Q_{BallState::SIZE, BallState::SIZE};
   SparseMatrix Q_init_{BallState::SIZE, BallState::SIZE};
-  Matrix<SRPOS, SRPOS> R_pose_;
+  Matrix<SRPOS, SRPOS> R_pos_;
   Ball ball_;
   IntegratorRK4 integrator_;
 
@@ -72,14 +72,14 @@ class EkfBall : public EstimatorBaseBall {
   std::mutex mutex_;
 
   std::deque<Frame> frames_;
-  Scalar t_last_pose_{NAN};
-  bool last_processed_frame_had_pose{false};
-  Scalar t_last_processed_frame_with_pose{NAN};
+  Scalar t_last_point{NAN};
+  bool last_processed_frame_had_point{false};
+  Scalar t_last_processed_frame_with_point{NAN};
 
 
   // Logger and timers
   Timer timer_process_{"Process"};
-  Timer timer_update_pose_{"Update Pose"};
+  Timer timer_update_point_{"Update point"};
   Timer timer_compute_gain_{"Kalman gain computation"};
   Timer timer_propagation_{"Propagation Prior"};
   Timer timer_jacobian_{"Propagation Jacobian"};

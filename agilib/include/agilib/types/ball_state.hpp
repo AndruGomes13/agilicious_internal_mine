@@ -10,16 +10,18 @@ namespace agi {
  *  x = [ p_x p_y p_z v_x v_y v_z ]ᵀ
  */
 struct BallState {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   enum IDX : int{ 
     POS = 0,
     POSX = 0, 
     POSY = 1, 
     POSZ = 2, 
     NPOS = 3, 
-    VEL = 4, 
-    VELX = 4, 
-    VELY = 5, 
-    VELZ = 6, 
+    VEL = 3, 
+    VELX = 3, 
+    VELY = 4, 
+    VELZ = 5, 
     NVEL = 3, 
     DYN = 6,
     SIZE = 6
@@ -36,7 +38,9 @@ struct BallState {
     p = pos;
     v = vel;
   }
-
+  BallState(const BallState& state) : t(state.t), seen_last_frame(state.seen_last_frame), last_seen_t(state.last_seen_t), x(state.x) {}
+  ~BallState() {}
+  
   Ref<Vector<3>> p{x.segment<IDX::NPOS>(IDX::POS)};
   Ref<Vector<3>> v{x.segment<IDX::NVEL>(IDX::VEL)};
 
@@ -47,7 +51,7 @@ struct BallState {
   }
 
   // inline bool valid() const { return x.allFinite() && std::isfinite(t) && t - last_seen_t < 1; } // TODO: make this a parameter
-  inline bool valid() const { return x.allFinite() && std::isfinite(t); } // TODO: make this a parameter
+  inline bool valid() const { return x.allFinite() && std::isfinite(t) && std::isfinite(last_seen_t); } // TODO: make this a parameter
 
   friend inline std::ostream& operator<<(std::ostream& os, const BallState& s) {
     os.precision(6);

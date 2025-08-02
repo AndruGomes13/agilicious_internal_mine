@@ -3,6 +3,7 @@
 #include <chrono>
 #include <functional>
 
+#include "agilib/math/types.hpp"
 #include "agilib/reference/velocity_reference.hpp"
 #include "agilib/types/pose.hpp"
 #include "agilib/utils/filesystem.hpp"
@@ -18,6 +19,7 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
+#include "visualization_msgs/Marker.h"
 #include "std_msgs/Float32.h"
 
 namespace agi {
@@ -116,6 +118,7 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
 
   // Publishers
   ball_state_pub_ = pnh_.advertise<agiros_msgs::BallState>("ball_state", 1);
+  ball_marker_pub_ = pnh_.advertise<visualization_msgs::Marker>("ball_marker", 1);
   state_pub_ = pnh_.advertise<agiros_msgs::QuadState>("state", 1);
   state_pose_pub_ = pnh_.advertise<geometry_msgs::PoseStamped>("state/pose", 1);
   state_odometry_pub_ = pnh_.advertise<nav_msgs::Odometry>("odometry", 1);
@@ -153,7 +156,7 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
 RosPilot::~RosPilot() { shutdown_ = true; }
 
 void RosPilot::runPipeline(const ros::TimerEvent& event) {
-  logger_.info("-- Runnig pipeline");
+  logger_.info("-- Running pipeline");
   pilot_.runPipeline(event.current_real.toSec());
 }
 
@@ -376,10 +379,28 @@ void RosPilot::pipelineCallback(const QuadState& state,
 
   cmd_pub_.publish(toRosCommand(command));
   state_odometry_pub_.publish(msg_odo);
+
+  // Ball State
   ball_state_pub_.publish(ball_msg);
+
+  // Ball Odometry
+visualization_msgs::Marker m;
+m.header        = msg.header;          // frame_id + stamp
+m.ns            = "ball";
+m.id            = 0;
+m.type          = visualization_msgs::Marker::SPHERE;
+m.action        = visualization_msgs::Marker::ADD;
+m.pose.position = toRosPoint(ball_state.p);          // centre of sphere
+m.pose.orientation.w = 1.0;                          // identity quat
+m.scale.x = m.scale.y = m.scale.z = 0.05;            // diameter 15 cm
+m.color.r = 0.0; m.color.g = 0.6; m.color.b = 1.0;   // teal
+m.color.a = 1.0;                                     // opaque
+ball_marker_pub_.publish(m);
   
+  // Drone State
   state_pub_.publish(msg);
-  geometry_msgs::PoseStamped state_pose_msg;
+  geometry_msgs::PoseStamped state_pose_msg;  
+  // Pose message for RVIZ
   state_pose_msg.header = msg.header;
   state_pose_msg.pose = msg.pose;
   state_pose_pub_.publish(state_pose_msg);

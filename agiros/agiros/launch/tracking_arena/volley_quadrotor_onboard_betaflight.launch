@@ -14,6 +14,7 @@
             <remap from="agiros_pilot/odometry_estimate" to="state_estimate"/>
             <remap from="agiros_pilot/pose_estimate" to="/mocap/$(arg quad_name)/pose"/>
             <remap from="agiros_pilot/guard_pose_estimate" to="/mocap/$(arg quad_name)/pose"/>
+            <remap from="agiros_pilot/ball_point_cloud" to="/mocap/unlabeled_point_cloud"/>
         </node>
 
     </group>

@@ -1,6 +1,7 @@
 #include "agilib/types/ball.hpp"
 #include "agilib/math/gravity.hpp"
 #include "agilib/types/ball_state.hpp"
+#include <iostream>
 
 namespace agi {
 

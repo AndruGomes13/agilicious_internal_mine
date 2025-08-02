@@ -6,7 +6,7 @@
 #include "agilib/base/module.hpp"
 #include "agilib/math/types.hpp"
 #include "agilib/types/imu_sample.hpp"
-#include "agilib/types/pose.hpp"
+#include "agilib/types/point.hpp"
 #include "agilib/types/ball_state.hpp"
 #include "agilib/types/point_cloud.hpp"
 
@@ -14,7 +14,7 @@ namespace agi {
 
   struct Frame {
     Scalar        t;         // the timestamp
-    std::optional<Pose> pose; // present if we got a pose, empty if it’s a “blank” frame
+    std::optional<Point> point; // present if we got a pose, empty if it’s a “blank” frame
   };
 
 class EstimatorBaseBall : public Module<EstimatorBaseBall> {
