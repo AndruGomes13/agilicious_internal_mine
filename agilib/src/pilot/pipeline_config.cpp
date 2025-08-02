@@ -12,6 +12,9 @@ void PipelineConfig::load(const Yaml& yaml, const std::string& directory) {
   estimator_cfg.loadIfUndefined(yaml["estimator"]);
   checkFile(directory, &estimator_cfg.file);
 
+  estimator_ball_cfg.loadIfUndefined(yaml["estimator_ball"]);
+  checkFile(directory, &estimator_ball_cfg.file);
+
   sampler_cfg.loadIfUndefined(yaml["sampler"]);
   checkFile(directory, &sampler_cfg.file);
 
@@ -28,6 +31,7 @@ void PipelineConfig::load(const Yaml& yaml, const std::string& directory) {
 
 std::ostream& operator<<(std::ostream& os, const PipelineConfig& config) {
   os << "Estimator:\n" << config.estimator_cfg;
+  os << "Ball Estimaton:\n" << config.estimator_ball_cfg;
   os << "Sampler:\n" << config.sampler_cfg;
   os << "Outer Controller:\n" << config.outer_controller_cfg;
   os << "Inner Controller:\n" << config.inner_controller_cfg;

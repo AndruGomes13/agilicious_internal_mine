@@ -560,6 +560,10 @@ void Pilot::guardOdometryCallback(const QuadState& state) {
   }
 }
 
+void Pilot::ballPointCloudCallback(const PointCloud& cloud) {
+  pipeline_.estimator_ball_->addPointCloud(cloud);
+}
+
 void Pilot::voltageCallback(const Scalar voltage) {
   bridge_->setVoltage(voltage);
 }
@@ -621,6 +625,13 @@ QuadState Pilot::getRecentState() const {
   QuadState state;
   if (!pipeline_.estimator_->getRecent(&state))
     logger_.warn("Could not get recent state!");
+  return state;
+}
+
+BallState Pilot::getRecentBallState() const {
+  BallState state;
+  if (!pipeline_.estimator_ball_->getRecent(&state))
+    logger_.warn("Could not get recent ball state!");
   return state;
 }
 

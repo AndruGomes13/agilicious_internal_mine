@@ -27,6 +27,8 @@
 #include "agilib/estimator/ekf/ekf_params.hpp"
 #include "agilib/estimator/ekf_imu/ekf_imu.hpp"
 #include "agilib/estimator/ekf_imu/ekf_imu_params.hpp"
+#include "agilib/estimator_ball/ekf_ball/ekf_ball.hpp"
+#include "agilib/estimator_ball/ekf_ball/ekf_params_ball.hpp"
 #include "agilib/estimator/feedthrough/feedthrough_estimator.hpp"
 #include "agilib/estimator/feedthrough/feedthrough_params.hpp"
 #include "agilib/estimator/mock_vio/mock_vio.hpp"
@@ -156,6 +158,25 @@ bool PilotParams::createEstimator(std::shared_ptr<EstimatorBase>& estimator,
   return false;
 }
 
+bool PilotParams::createBallEstimator(std::shared_ptr<EstimatorBaseBall>& estimator,
+                                  const ModuleConfig& config) const{
+try {
+    if (config.type == "EKF_Ball") {
+      std::shared_ptr<EkfParametersBall> params = std::make_shared<EkfParametersBall>();
+      if (!config.file.empty() && !params->load(config.file))
+        throw ParameterException();
+      estimator = std::make_shared<EkfBall>(ball_, params);
+      return true;
+    }
+  } catch (const ParameterException& e) {
+    throw ParameterException("Could not load ball estimator " + config.type +
+                             " from parameter file \'" + config.file.string() +
+                             "\':\n" + e.what());
+  }
+  return false;
+}
+
+
 bool PilotParams::createController(std::shared_ptr<ControllerBase>& controller,
                                    const ModuleConfig& config) const {
   try {
@@ -278,6 +299,10 @@ bool PilotParams::createPipeline(Pipeline* const pipeline,
   if (!createEstimator(pipeline->estimator_, pipeline_cfg_.estimator_cfg))
     logger_.warn("Did not create estimator '%s'!",
                  pipeline_cfg_.estimator_cfg.type.c_str());
+  if (!createBallEstimator(pipeline->estimator_ball_, pipeline_cfg_.estimator_ball_cfg)){
+    logger_.warn("Did not create ball estimator '%s'!",
+                 pipeline_cfg_.estimator_ball_cfg.type.c_str());
+  }
   if (!createController(pipeline->outer_controller_,
                         pipeline_cfg_.outer_controller_cfg))
     logger_.warn("Did not create outer controller '%s'!",

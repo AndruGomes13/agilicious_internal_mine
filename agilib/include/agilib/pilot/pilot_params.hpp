@@ -8,10 +8,12 @@
 #include "agilib/bridge/bridge_base.hpp"
 #include "agilib/controller/controller_base.hpp"
 #include "agilib/estimator/estimator_base.hpp"
+#include "agilib/estimator_ball/estimator_base_ball.hpp"
 #include "agilib/guard/guard_base.hpp"
 #include "agilib/pilot/pipeline_config.hpp"
 #include "agilib/sampler/sampler_base.hpp"
 #include "agilib/types/quadrotor.hpp"
+#include "agilib/types/ball.hpp"
 
 namespace agi {
 
@@ -28,6 +30,8 @@ class PilotParams : public ParameterBase {
 
   bool createEstimator(std::shared_ptr<EstimatorBase>& estimator,
                        const ModuleConfig& config) const;
+  bool createBallEstimator(std::shared_ptr<EstimatorBaseBall>& estimator,
+                           const ModuleConfig& config) const;
   bool createSampler(std::shared_ptr<SamplerBase>& sampler,
                      const std::shared_ptr<ControllerBase>& controller,
                      const ModuleConfig& config) const;
@@ -57,6 +61,7 @@ class PilotParams : public ParameterBase {
   fs::path quad_file_;
 
   Quadrotor quad_;
+  Ball ball_;
 
   Scalar dt_min_{0.01};
   int outerloop_divisor_{1};

@@ -3,13 +3,18 @@
 #include "agilib/math/types.hpp"
 #include "agilib/types/command.hpp"
 #include "agilib/types/quad_state.hpp"
+#include "agilib/types/ball_state.hpp"
+#include "agilib/types/pose.hpp"
+#include "agilib/types/point_cloud.hpp"
 #include "agiros_msgs/Command.h"
 #include "agiros_msgs/QuadState.h"
+#include "agiros_msgs/BallState.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/Bool.h"
+#include "motion_capture_ros_msgs/PointCloud.h"
 
 namespace agi {
 
@@ -84,6 +89,15 @@ inline agiros_msgs::QuadState toRosQuadState(const agi::QuadState& state) {
   return msg;
 }
 
+inline agiros_msgs::BallState toRosBallState(const agi::BallState& state) {
+  agiros_msgs::BallState msg;
+  msg.t = state.t;
+  msg.position = toRosVector(state.p);
+  msg.linear_velocity = toRosVector(state.v);
+  return msg;
+}
+
+
 template<typename T>
 inline agi::Command fromRosCommand(const T& ros_command) {
   if (ros_command.is_single_rotor_thrust) {
@@ -132,5 +146,17 @@ inline bool fromRosThrusts(const T& ros_thrusts, Vector<4>* const agi_thrusts) {
   return true;
 }
 
+inline PointCloud fromRosPointCloud(const motion_capture_ros_msgs::PointCloud& ros_point_cloud) {
+  PointCloud point_cloud;
+  point_cloud.t = ros_point_cloud.t;
+  for (const auto& pose_msg : ros_point_cloud.poses) {
+    Pose pose;
+    pose.t = pose_msg.header.stamp.toSec();
+    pose.position = fromRosVec3(pose_msg.pose.position);
+    pose.attitude = fromRosQuaternion(pose_msg.pose.orientation);
+    point_cloud.poses.push_back(pose);
+  }
 
+  return point_cloud;
+}
 }  // namespace agi

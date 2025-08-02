@@ -6,6 +6,8 @@
 #include "agilib/pilot/pilot_params.hpp"
 #include "agilib/reference/velocity_reference.hpp"
 #include "agilib/types/quadrotor.hpp"
+#include "agilib/types/ball_state.hpp"
+#include "agilib/types/point_cloud.hpp"
 #include "agilib/utils/logger.hpp"
 #include "agilib/utils/timer.hpp"
 
@@ -40,6 +42,7 @@ class Pilot {
   void odometryCallback(const QuadState& state);
   void guardOdometryCallback(const Pose& pose);
   void guardOdometryCallback(const QuadState& state);
+  void ballPointCloudCallback(const PointCloud& cloud);
   void voltageCallback(const Scalar voltage);
   void imuCallback(const ImuSample& imu);
   void motorSpeedCallback(const Vector<4>& mot);
@@ -48,6 +51,7 @@ class Pilot {
   const SetpointVector getOuterSetpoints() const;
   const SetpointVector getInnerSetpoints() const;
   QuadState getRecentState() const;
+  BallState getRecentBallState() const;
   Scalar getVoltage() const;
 
   void enable(bool enable);

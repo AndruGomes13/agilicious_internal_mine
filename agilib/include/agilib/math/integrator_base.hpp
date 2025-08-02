@@ -4,6 +4,7 @@
 
 #include "agilib/math/types.hpp"
 #include "agilib/types/quad_state.hpp"
+#include "agilib/types/ball_state.hpp"
 
 namespace agi {
 
@@ -16,6 +17,9 @@ class IntegratorBase {
 
   bool integrate(const QuadState& initial_state,
                  QuadState* const final_state) const;
+
+  bool integrate(const BallState& initial_state,
+                BallState* const final_state) const;
 
   bool integrate(const Ref<const Vector<>> initial_state, const Scalar dt,
                  Ref<Vector<>> final_state) const;

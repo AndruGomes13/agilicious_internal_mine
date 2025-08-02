@@ -10,6 +10,7 @@ namespace agi {
 
 struct PipelineConfig {
   ModuleConfig estimator_cfg;
+  ModuleConfig estimator_ball_cfg;
   ModuleConfig sampler_cfg;
   ModuleConfig outer_controller_cfg;
   ModuleConfig inner_controller_cfg;
