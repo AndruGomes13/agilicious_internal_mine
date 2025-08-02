@@ -17,6 +17,7 @@
 #include "agiros/ros_traj_visualizer.hpp"
 #include "agiros_msgs/Command.h"
 #include "agiros_msgs/Reference.h"
+#include "motion_capture_ros_msgs/PointCloud.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "mav_msgs/Actuators.h"
@@ -49,6 +50,7 @@ class RosPilot {
   void guardStateEstimateCallback(const agiros_msgs::QuadState& msg);
   void guardOdometryEstimateCallback(const nav_msgs::OdometryConstPtr& msg);
   void guardPoseEstimateCallback(const geometry_msgs::PoseStampedConstPtr& msg);
+  void ballPointCloudCallback(const motion_capture_ros_msgs::PointCloudConstPtr& msg);
   void imuCallback(const sensor_msgs::ImuConstPtr& msg);
   void motorSpeedCallback(const mav_msgs::Actuators& msg);
   void startCallback(const std_msgs::EmptyConstPtr& msg);
@@ -67,7 +69,8 @@ class RosPilot {
   void publishDebugVariable(const std::string& name,
                             const PublishLogContainer& container);
   void publishLoggerDebugMsg();
-  void pipelineCallback(const QuadState& state, const Feedback& feedback,
+  void pipelineCallback(const QuadState& state, const BallState& ball_state, 
+                        const Feedback& feedback,
                         const ReferenceVector& references,
                         const SetpointVector& reference_setpoints,
                         const SetpointVector& outer_setpoints,
@@ -85,6 +88,7 @@ class RosPilot {
   ros::Subscriber pose_estimate_sub_;
   ros::Subscriber odometry_estimate_sub_;
   ros::Subscriber state_estimate_sub_;
+  ros::Subscriber ball_point_cloud_sub_;
   ros::Subscriber guard_pose_estimate_sub_;
   ros::Subscriber guard_odometry_estimate_sub_;
   ros::Subscriber guard_state_estimate_sub_;
@@ -103,6 +107,7 @@ class RosPilot {
   ros::Subscriber guard_sub_;
 
   ros::Publisher state_pub_;
+  ros::Publisher ball_state_pub_;
   ros::Publisher state_pose_pub_;
   ros::Publisher state_odometry_pub_;
   ros::Publisher telemetry_pub_;

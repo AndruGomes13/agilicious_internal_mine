@@ -13,6 +13,7 @@
 #include "agiros/time.hpp"
 #include "agiros_msgs/DebugMsg.h"
 #include "agiros_msgs/QuadState.h"
+#include "agiros_msgs/BallState.h"
 #include "agiros_msgs/Telemetry.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
@@ -61,6 +62,9 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
     ROS_INFO("with parameter file:    %s", params_.guard_cfg_.file.c_str());
 
   // Pose & Odometry subscribers
+   ball_point_cloud_sub_ = pnh_.subscribe(
+    "ball_point_cloud", 1, &RosPilot::ballPointCloudCallback, this,
+    ros::TransportHints().tcpNoDelay());
   pose_estimate_sub_ =
     pnh_.subscribe("pose_estimate", 1, &RosPilot::poseEstimateCallback, this,
                    ros::TransportHints().tcpNoDelay());
@@ -111,6 +115,7 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
     nh_.subscribe("mavros/battery", 1, &RosPilot::voltageCallback, this);
 
   // Publishers
+  ball_state_pub_ = pnh_.advertise<agiros_msgs::BallState>("ball_state", 1);
   state_pub_ = pnh_.advertise<agiros_msgs::QuadState>("state", 1);
   state_pose_pub_ = pnh_.advertise<geometry_msgs::PoseStamped>("state/pose", 1);
   state_odometry_pub_ = pnh_.advertise<nav_msgs::Odometry>("odometry", 1);
@@ -136,7 +141,7 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
   pilot_.registerPipelineCallback(std::bind(
     &RosPilot::pipelineCallback, this, std::placeholders::_1,
     std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
-    std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
+    std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8));
 
   run_pipeline_timer_ = nh_.createTimer(
     ros::Duration(pilot_.getParams().dt_min_), &RosPilot::runPipeline, this);
@@ -236,6 +241,12 @@ void RosPilot::guardOdometryEstimateCallback(
   state.w = fromRosVec3(msg->twist.twist.angular);
   state.mot = motor_speeds_;
   pilot_.guardOdometryCallback(state);
+}
+
+void RosPilot::ballPointCloudCallback(
+  const motion_capture_ros_msgs::PointCloudConstPtr& msg) {
+  PointCloud point_cloud = fromRosPointCloud(*msg);
+  pilot_.ballPointCloudCallback(point_cloud);
 }
 
 void RosPilot::imuCallback(const sensor_msgs::ImuConstPtr& msg) {
@@ -347,6 +358,7 @@ void RosPilot::feedthroughCommandCallback(
 }
 
 void RosPilot::pipelineCallback(const QuadState& state,
+                                const BallState& ball_state,
                                 const Feedback& feedback,
                                 const ReferenceVector& references,
                                 const SetpointVector& setpoints,
@@ -354,6 +366,7 @@ void RosPilot::pipelineCallback(const QuadState& state,
                                 const SetpointVector& inner_setpoints,
                                 const Command& command) {
   agiros_msgs::QuadState msg = toRosQuadState(state);
+  agiros_msgs::BallState ball_msg = toRosBallState(ball_state);
 
   nav_msgs::Odometry msg_odo;
   msg_odo.header = msg.header;
@@ -362,6 +375,8 @@ void RosPilot::pipelineCallback(const QuadState& state,
 
   cmd_pub_.publish(toRosCommand(command));
   state_odometry_pub_.publish(msg_odo);
+  ball_state_pub_.publish(ball_msg);
+  
   state_pub_.publish(msg);
   geometry_msgs::PoseStamped state_pose_msg;
   state_pose_msg.header = msg.header;

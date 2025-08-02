@@ -12,6 +12,8 @@
 #include "agilib/types/quad_state.hpp"
 #include "agilib/types/setpoint.hpp"
 #include "agilib/utils/logger.hpp"
+#include "agilib/estimator_ball/estimator_base_ball.hpp"
+#include "agilib/types/ball_state.hpp"
 
 namespace agi {
 
@@ -21,12 +23,13 @@ class Pipeline {
            const Scalar feedthrough_timeout = 0.05);
 
   using PipelineCallbackFunction = std::function<void(
-    const QuadState&, const Feedback&, const ReferenceVector&,
+    const QuadState&, const BallState&, const Feedback&, const ReferenceVector&,
     const SetpointVector&, const SetpointVector&, const SetpointVector&,
     const Command&)>;
 
   ReferenceVector references_;
   std::shared_ptr<EstimatorBase> estimator_;
+  std::shared_ptr<EstimatorBaseBall> estimator_ball_;
   std::shared_ptr<SamplerBase> sampler_;
   std::shared_ptr<ControllerBase> outer_controller_;
   std::shared_ptr<ControllerBase> inner_controller_;
@@ -53,6 +56,7 @@ class Pipeline {
   inline bool feedthroughActive() const { return feedthrough_active_; }
 
   inline const QuadState& getState() const { return state_; }
+  inline const BallState& getBallState() const { return ball_state_; }
   inline const SetpointVector getSetpoints() const { return setpoints_; }
   inline const SetpointVector& getOuterSetpoints() const {
     return setpoints_outer_;
@@ -71,6 +75,7 @@ class Pipeline {
 
  private:
   QuadState state_;
+  BallState ball_state_;
   Feedback feedback_;
   SetpointVector setpoints_;
   SetpointVector setpoints_outer_;

@@ -10,6 +10,7 @@ Pipeline::Pipeline(const std::string& name, const Scalar feedthrough_timeout)
 Pipeline& Pipeline::operator=(const Pipeline& other) {
   references_ = other.references_;
   estimator_ = other.estimator_;
+  estimator_ball_ = other.estimator_ball_;
   sampler_ = other.sampler_;
   outer_controller_ = other.outer_controller_;
   inner_controller_ = other.inner_controller_;
@@ -19,7 +20,7 @@ Pipeline& Pipeline::operator=(const Pipeline& other) {
 
 bool Pipeline::isReferenceSet() const { return !references_.empty(); }
 
-bool Pipeline::isEstimatorSet() const { return estimator_ != nullptr; }
+bool Pipeline::isEstimatorSet() const { return estimator_ != nullptr && estimator_ball_ != nullptr; }
 
 bool Pipeline::isSamplerSet() const { return sampler_ != nullptr; }
 
@@ -61,6 +62,15 @@ bool Pipeline::run(const Scalar t) {
     const bool estimator_successful = estimator_->getAt(t, &state_);
     initialized_ |= estimator_successful;
     if (initialized_ && !estimator_successful) {
+      logger_.error("Estimator failed!");
+      return false;
+    }
+  }
+
+  if (estimator_ball_) {
+    const bool ball_estimator_successful = estimator_ball_->getAt(t, &ball_state_);
+    initialized_ |= ball_estimator_successful;
+    if (initialized_ && !ball_estimator_successful) {
       logger_.error("Estimator failed!");
       return false;
     }
@@ -154,7 +164,7 @@ bool Pipeline::run(const Scalar t) {
 
   // Spawn callbacks
   for (const PipelineCallbackFunction& callback : callbacks_)
-    callback(state_, feedback_, references_, setpoints_, setpoints_outer_,
+    callback(state_, ball_state_, feedback_, references_, setpoints_, setpoints_outer_,
              setpoints_inner_, command_);
 
   return true;
