@@ -110,6 +110,7 @@ class RosPilot {
   ros::Publisher ball_state_pub_;
   ros::Publisher ball_marker_pub_;
   ros::Publisher state_pose_pub_;
+  ros::Publisher policy_state_pub_;
   ros::Publisher state_odometry_pub_;
   ros::Publisher telemetry_pub_;
   ros::Publisher cmd_pub_;

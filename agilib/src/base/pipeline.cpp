@@ -59,7 +59,6 @@ Command Pipeline::getCommand() const {
 
 bool Pipeline::run(const Scalar t) {
   // Get State
-  logger_.info("Running pipeline at time", t);
   if (estimator_) {
     const bool estimator_successful = estimator_->getAt(t, &state_);
     initialized_ |= estimator_successful;
@@ -70,14 +69,12 @@ bool Pipeline::run(const Scalar t) {
   }
 
   if (estimator_ball_) {
-    logger_.info("Getting ball state at time %1.3f", t);
     const bool ball_estimator_successful = estimator_ball_->getAt(t, &ball_state_);
-    logger_.info("Ball state at time result: %s", ball_estimator_successful ? "TRUE" : "FALSE");
 
     initialized_ |= ball_estimator_successful;
     if (initialized_ && !ball_estimator_successful) {
       logger_.error("Ball stimator failed!");
-      return false;
+      // return false; Don't fail the whole pipeline if ball estimator fails
     }
   }
 

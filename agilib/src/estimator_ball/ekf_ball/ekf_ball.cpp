@@ -259,10 +259,6 @@ bool EkfBall::propagatePrior(const Scalar t) {
 
   const BallState initial = prior_;
   prior_.t = t;
-  logger_.info("Integrating dt: %1.3f", prior_.t - initial.t);
-  logger_.info("Prior t: %1.3f", prior_.t);
-  logger_.info("Initial t: %1.3f", initial.t);
-
   integrator_.integrate(initial, &prior_);
   sanitize(prior_);
 

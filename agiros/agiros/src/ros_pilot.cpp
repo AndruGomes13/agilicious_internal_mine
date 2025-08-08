@@ -15,6 +15,7 @@
 #include "agiros_msgs/DebugMsg.h"
 #include "agiros_msgs/QuadState.h"
 #include "agiros_msgs/BallState.h"
+#include "agiros_msgs/PolicyState.h"
 #include "agiros_msgs/Telemetry.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
@@ -121,6 +122,7 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
   ball_marker_pub_ = pnh_.advertise<visualization_msgs::Marker>("ball_marker", 1);
   state_pub_ = pnh_.advertise<agiros_msgs::QuadState>("state", 1);
   state_pose_pub_ = pnh_.advertise<geometry_msgs::PoseStamped>("state/pose", 1);
+  policy_state_pub_ = pnh_.advertise<agiros_msgs::PolicyState>("policy_state", 1);
   state_odometry_pub_ = pnh_.advertise<nav_msgs::Odometry>("odometry", 1);
   telemetry_pub_ = pnh_.advertise<agiros_msgs::Telemetry>("telemetry", 1);
   cmd_pub_ = pnh_.advertise<agiros_msgs::Command>("mpc_command", 1);
@@ -156,7 +158,6 @@ RosPilot::RosPilot(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
 RosPilot::~RosPilot() { shutdown_ = true; }
 
 void RosPilot::runPipeline(const ros::TimerEvent& event) {
-  logger_.info("-- Running pipeline");
   pilot_.runPipeline(event.current_real.toSec());
 }
 
@@ -380,23 +381,25 @@ void RosPilot::pipelineCallback(const QuadState& state,
   cmd_pub_.publish(toRosCommand(command));
   state_odometry_pub_.publish(msg_odo);
 
+  // --- Ball Related ---
   // Ball State
   ball_state_pub_.publish(ball_msg);
 
-  // Ball Odometry
-visualization_msgs::Marker m;
-m.header        = msg.header;          // frame_id + stamp
-m.ns            = "ball";
-m.id            = 0;
-m.type          = visualization_msgs::Marker::SPHERE;
-m.action        = visualization_msgs::Marker::ADD;
-m.pose.position = toRosPoint(ball_state.p);          // centre of sphere
-m.pose.orientation.w = 1.0;                          // identity quat
-m.scale.x = m.scale.y = m.scale.z = 0.05;            // diameter 15 cm
-m.color.r = 0.0; m.color.g = 0.6; m.color.b = 1.0;   // teal
-m.color.a = 1.0;                                     // opaque
-ball_marker_pub_.publish(m);
+  // Ball Odometry (Topics for RVIZ)
+  visualization_msgs::Marker m;
+  m.header        = ball_msg.header;          // frame_id + stamp
+  m.ns            = "ball";
+  m.id            = 0;
+  m.type          = visualization_msgs::Marker::SPHERE;
+  m.action        = visualization_msgs::Marker::ADD;
+  m.pose.position = toRosPoint(ball_state.p);          // centre of sphere
+  m.pose.orientation.w = 1.0;                          // identity quat
+  m.scale.x = m.scale.y = m.scale.z = 0.05;            // diameter 15 cm
+  m.color.r = 0.0; m.color.g = 0.6; m.color.b = 1.0;   // teal
+  m.color.a = 1.0;                                     // opaque
+  ball_marker_pub_.publish(m);
   
+  // --- Drone Related ---
   // Drone State
   state_pub_.publish(msg);
   geometry_msgs::PoseStamped state_pose_msg;  
@@ -405,12 +408,25 @@ ball_marker_pub_.publish(m);
   state_pose_msg.pose = msg.pose;
   state_pose_pub_.publish(state_pose_msg);
 
+  // --- Policy state related ---
+  agiros_msgs::PolicyState policy_state_msg;
+  policy_state_msg.header = msg.header;
+  policy_state_msg.t = msg.header.stamp.toSec();
+  policy_state_msg.quad_state = msg;
+  policy_state_msg.ball_state = ball_msg;
+  policy_state_pub_.publish(policy_state_msg);
+
+
+  // Rest of RPG original code
   agiros_msgs::Telemetry telemetry_msg;
   telemetry_msg.t = state.t;
   telemetry_msg.header = msg.header;
   telemetry_msg.bridge_type.data = pilot_.getActiveBridgeType();
   telemetry_msg.bridge_armed.data = feedback.armed;
   telemetry_msg.guard_triggered.data = pilot_.guardTriggered();
+
+
+
 
   // get the current reference from the pilot
   if (!setpoints.empty()) {
